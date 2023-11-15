@@ -1,10 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
@@ -19,15 +17,8 @@ func init() {
 
 func main() {
 
-	accessToken, exists := os.LookupEnv("ACCESS_TOKEN")
-
-	if exists {
-		fmt.Println(accessToken)
-	}
-
 	mux := mux.NewRouter()
-	fmt.Println("accessToken:", os.Getenv("ACCESS_TOKEN"))
-	mux.HandleFunc("/api/case/{caseId}/outgoingsByRegion", outgoingsByCaseId).Methods("GET")
+	mux.HandleFunc("/api/accounts", starlingAccount).Methods("GET")
 
 	http.ListenAndServe(":8080", mux)
 }

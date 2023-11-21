@@ -15,7 +15,9 @@ func starlingAccount(w http.ResponseWriter, r *http.Request) {
 
 	accountUid := getStarlingAccountUid()
 
-	accountResp, err := json.Marshal(StarlingAccountResp{AccountUid: accountUid})
+	balance := getAccountBalance(accountUid)
+
+	accountResp, err := json.Marshal(StarlingBalanceResp{Balance: balance})
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -24,6 +26,44 @@ func starlingAccount(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(accountResp)
+	}
+
+}
+
+func getAccountBalance(accountId string) StarlingBalance {
+	accessToken, exists := os.LookupEnv("ACCESS_TOKEN")
+
+	if !exists {
+		fmt.Println("ERROR: ACCESS_TOKEN not set")
+	} else {
+		fmt.Println("ACCESS_TOKEN: ", accessToken)
+	}
+
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", starlingAPIBaseUrl+"accounts/"+accountId+"/balance", nil)
+	if err != nil {
+		fmt.Println("ERROR: ", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+
+	res, _ := client.Do(req)
+
+	if err != nil {
+		fmt.Println("ERROR: ", err)
+		return StarlingBalance{}
+	} else {
+		defer res.Body.Close()
+
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			fmt.Println(err)
+		}
+		var res StarlingBalance
+		json.Unmarshal(body, &res)
+		fmt.Printf("%+v\n", res)
+
+		return res
 	}
 
 }
@@ -60,7 +100,7 @@ func getStarlingAccountUid() string {
 		}
 		var res StarlingAccountInfo
 		json.Unmarshal(body, &res)
-		fmt.Println(res)
+		fmt.Println("account uid" + res.Accounts[0].AccountUid)
 
 		return res.Accounts[0].AccountUid
 	}

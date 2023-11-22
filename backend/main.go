@@ -18,6 +18,7 @@ func init() {
 func main() {
 
 	mux := mux.NewRouter()
+	mux.HandleFunc("/api/user", starlingUser).Methods("GET")
 	mux.HandleFunc("/api/accounts", starlingAccount).Methods("GET")
 
 	http.ListenAndServe(":8080", mux)

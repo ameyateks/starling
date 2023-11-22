@@ -23,6 +23,10 @@ type StarlingBalance struct {
 	TotalEffectiveBalance SignedCurrencyAndAmount `json:"totalEffectiveBalance"`
 }
 
+type StarlingUser struct {
+	AccountHolderName string `json:"accountHolderName"`
+}
+
 type SignedCurrencyAndAmount struct {
 	Currency   string `json:"currency"`
 	MinorUnits int    `json:"minorUnits"`

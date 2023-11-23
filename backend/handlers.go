@@ -11,7 +11,12 @@ import (
 
 const starlingAPIBaseUrl = "https://api.starlingbank.com/api/v2/"
 
+func enableCors(w *http.ResponseWriter) {
+	(*w).Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+}
+
 func starlingAccount(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
 
 	accountUid := getStarlingAccountUid()
 
@@ -31,6 +36,7 @@ func starlingAccount(w http.ResponseWriter, r *http.Request) {
 }
 
 func starlingUser(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
 	accessToken, exists := os.LookupEnv("ACCESS_TOKEN")
 
 	if !exists {

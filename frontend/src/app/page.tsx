@@ -20,7 +20,7 @@ export default function Home() {
     <main>
       <div className="flex flex-col items-center w-full h-full bg-backgroundBeige min-h-screen">
         <div className="flex text-darkGreen text-6xl pt-1 justify-center">
-          Ameya Tekale
+          Pocket Watcher
         </div>
         <div className="flex flex-col w-full h-96 md:px-24 lg:px-80">
           <div className="flex flex-row w-full h-full bg-beige rounded-md">

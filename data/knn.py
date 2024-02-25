@@ -58,7 +58,12 @@ def knnAlgoToReturnClassifiedSpendingCategory(
 
 
 currentTransaction = json.loads(sys.argv[1])
-allTransactions = json.loads(sys.argv[2])["feedItems"]
+file = open("/tmp/transactions.json", "r")
+
+allTransactions = json.loads(file.read())
+
+file.close()
+
 parseTransaction = lambda x: Transaction(
     x["spendingCategory"],
     x["amount"]["minorUnits"],

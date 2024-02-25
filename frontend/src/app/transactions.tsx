@@ -3,6 +3,7 @@ import Loading from "./loading";
 import React, { useState, useEffect, Fragment, useMemo } from "react";
 import { pipe } from "fp-ts/lib/function";
 import * as O from "fp-ts/lib/Option";
+import * as E from "fp-ts/lib/Either";
 import * as A from "fp-ts/Array";
 import { array, string } from "fp-ts";
 import { classNames, priceFormatter2dp } from "../../utils";
@@ -12,6 +13,7 @@ import {
   ChevronDoubleDownIcon,
   ChevronDoubleUpIcon,
 } from "@heroicons/react/24/solid";
+import * as t from "io-ts";
 
 type Transaction = {
   feedItemUid: string;
@@ -34,6 +36,10 @@ type Transaction = {
   spendingCategory: string;
   hasAttachment: boolean;
   hasReceipt: boolean;
+};
+
+type ClassifiedTransaction = {
+  category: string;
 };
 
 export function Transactions() {
@@ -78,6 +84,38 @@ function List(props: { transactions: Transaction[] }): JSX.Element {
     setIsOpen(O.some(transaction));
   }
 
+  const [isLoading, setIsLoading] = useState(false);
+  const [responseData, setResponseData] = useState<
+    O.Option<ClassifiedTransaction>
+  >(O.none);
+
+  const handleClick = async (transaction: Transaction) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch("http://localhost:8080/api/knn", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(transaction),
+      });
+
+      const responseData = await response.json();
+      pipe(
+        responseData,
+        t.type({ category: t.string }).decode,
+        E.match(
+          (err) => console.error(JSON.stringify(err)),
+          (data) => setResponseData(O.some(data))
+        )
+      );
+    } catch (error) {
+      console.error("Error:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="parent flex flex-col h-full max-h-[228px] bg-white rounded-md">
       <div className="child flex-1 border-b border-gray-300 p-1 overflow-y-auto space-y-1">
@@ -87,7 +125,10 @@ function List(props: { transactions: Transaction[] }): JSX.Element {
             <>
               <button
                 className="h-1/3 w-full flex flex-row text-red text-sm bg-backgroundBeige rounded-md"
-                onClick={() => openModal(transaction)}
+                onClick={() => {
+                  openModal(transaction);
+                  handleClick(transaction);
+                }}
               >
                 <div className="flex flex-col justify-between p-2 w-2/3">
                   <div

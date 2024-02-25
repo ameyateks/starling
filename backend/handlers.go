@@ -11,10 +11,14 @@ import (
 	"os"
 )
 
+var allTransactions []Transaction
+
 const starlingAPIBaseUrl = "https://api.starlingbank.com/api/v2/"
 
 func enableCors(w *http.ResponseWriter) {
 	(*w).Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+	(*w).Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	(*w).Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Accept")
 }
 
 func starlingAccount(w http.ResponseWriter, r *http.Request) {
@@ -40,15 +44,26 @@ func starlingAccount(w http.ResponseWriter, r *http.Request) {
 }
 
 func classifyTransaction(w http.ResponseWriter, r *http.Request) {
-	testTransaction, oneErr := json.Marshal(classifiedTransactionTestData)
-	transactions, transactionsErr := json.Marshal(transactionsTestData)
+	enableCors(&w)
+
+	var requestBody Transaction
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	fmt.Printf("Received Name: %s", requestBody.CounterPartyName)
+
+	transactionFromReq, oneErr := json.Marshal(requestBody)
+
 	if oneErr != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
-	if transactionsErr != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-	}
-	pythonCommand := exec.Command("python3", "../data/knn.py", string(testTransaction), string(transactions))
+
+	pythonCommand := exec.Command("python3", "../data/knn.py", string(transactionFromReq))
 	classificationResp, pythonErr := pythonCommand.CombinedOutput()
 	if pythonErr != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -62,7 +77,13 @@ func classifyTransaction(w http.ResponseWriter, r *http.Request) {
 func starlingTransactions(w http.ResponseWriter, r *http.Request) {
 	enableCors(&w)
 
-	transactions := getTransactionsForMonth(getStarlingAccountAndCategoryUid().AccountUid, getStarlingAccountAndCategoryUid().CategoryUid)
+	now := time.Now()
+	currentYear, currentMonth, _ := now.Date()
+	currentLocation := now.Location()
+
+	firstOfMonth := time.Date(currentYear, currentMonth, 1, 0, 0, 0, 0, currentLocation)
+
+	transactions := getTransactionsForTimePeriod(getStarlingAccountAndCategoryUid().AccountUid, getStarlingAccountAndCategoryUid().CategoryUid, firstOfMonth.Format(time.RFC3339), now.Format(time.RFC3339))
 
 	transactionsResp, err := json.Marshal(TransactionResp{Transactions: transactions.FeedItems})
 
@@ -121,7 +142,6 @@ func getSpaces(accountId string) StarlingSpaces {
 	if !exists {
 		fmt.Println("ERROR: ACCESS_TOKEN not set")
 	} else {
-		fmt.Println("ACCESS_TOKEN: ", accessToken)
 	}
 
 	client := &http.Client{}
@@ -159,7 +179,6 @@ func getAccountBalance(accountId string) StarlingBalance {
 	if !exists {
 		fmt.Println("ERROR: ACCESS_TOKEN not set")
 	} else {
-		fmt.Println("ACCESS_TOKEN: ", accessToken)
 	}
 
 	client := &http.Client{}
@@ -198,7 +217,6 @@ func getStarlingAccountAndCategoryUid() AccountAndCategoryUid {
 	if !exists {
 		fmt.Println("ERROR: ACCESS_TOKEN not set")
 	} else {
-		fmt.Println("ACCESS_TOKEN: ", accessToken)
 	}
 
 	client := &http.Client{}
@@ -223,8 +241,6 @@ func getStarlingAccountAndCategoryUid() AccountAndCategoryUid {
 		}
 		var res StarlingAccountInfo
 		json.Unmarshal(body, &res)
-		fmt.Println(res)
-		fmt.Println("default cat uid" + res.Accounts[0].AccountUid)
 
 		return AccountAndCategoryUid{AccountUid: res.Accounts[0].AccountUid, CategoryUid: res.Accounts[0].DefaultCategory}
 
@@ -232,13 +248,12 @@ func getStarlingAccountAndCategoryUid() AccountAndCategoryUid {
 
 }
 
-func getTransactionsForMonth(accountUid string, categoryUid string) Transactions {
+func getTransactionsForTimePeriod(accountUid string, categoryUid string, firstDate string, secondDate string) Transactions {
 	accessToken, exists := os.LookupEnv("ACCESS_TOKEN")
 
 	if !exists {
 		fmt.Println("ERROR: ACCESS_TOKEN not set")
 	} else {
-		fmt.Println("ACCESS_TOKEN Transactions: ", accessToken)
 	}
 
 	client := &http.Client{}
@@ -249,19 +264,11 @@ func getTransactionsForMonth(accountUid string, categoryUid string) Transactions
 
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 
-	now := time.Now()
-	currentYear, currentMonth, _ := now.Date()
-	currentLocation := now.Location()
-
-	firstOfMonth := time.Date(currentYear, currentMonth, 1, 0, 0, 0, 0, currentLocation)
-
 	q := req.URL.Query()
-	q.Add("minTransactionTimestamp", firstOfMonth.Format(time.RFC3339))
+	q.Add("minTransactionTimestamp", firstDate)
 
-	q.Add("maxTransactionTimestamp", now.Format(time.RFC3339))
+	q.Add("maxTransactionTimestamp", secondDate)
 	req.URL.RawQuery = q.Encode()
-	fmt.Println("query", req.URL.RawQuery)
-	fmt.Println("full url", req.URL.String())
 
 	res, err := client.Do(req)
 	if err != nil {
@@ -277,7 +284,6 @@ func getTransactionsForMonth(accountUid string, categoryUid string) Transactions
 		}
 		var res Transactions
 		json.Unmarshal(body, &res)
-		fmt.Println(string(body))
 
 		return res
 	}

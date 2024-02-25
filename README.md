@@ -9,5 +9,5 @@ The more fascinating aspect of this project is being able to use the existing da
 An end goal will be to save the transactions to a relational database and have a look at how my KNN classifier performs across all historic transactions.
 
 Screenshots:
-<img src="/starling/frontend/MainView.png" height="300" width="429" >
-<img src="/starling/frontend/TransactionView.png" height="300" width="429" >
+<img src="/frontend/MainView.png" height="300" width="429" >
+<img src="/frontend/TransactionView.png" height="300" width="429" >

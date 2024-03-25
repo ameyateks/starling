@@ -8,7 +8,9 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 )
 
 func init() {
@@ -39,6 +41,22 @@ func check(e error) {
 }
 
 func main() {
+	dbHost := os.Getenv("PG_HOST")
+	dbUser := os.Getenv("PG_USER")
+	dbPass := os.Getenv("PG_PASSWORD")
+	dbName := os.Getenv("PG_NAME")
+
+	db, err := sqlx.Connect("postgres", "user="+dbUser+" dbname="+dbName+" sslmode=disable"+" password="+dbPass+" host="+dbHost)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer db.Close()
+
+	if err := db.Ping(); err != nil {
+		log.Fatal(err)
+	} else {
+		log.Println("Successfully Connected")
+	}
 
 	mux := mux.NewRouter()
 	// mux.HandleFunc("/api/user", starlingUser).Methods("GET")

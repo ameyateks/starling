@@ -43,8 +43,6 @@ type BalanceAndSpaces = {
   transactions: any[];
 };
 
-const backendUrl = process.env.BE_ORIGIN;
-
 type NameAndBalanceSpace = { name: string; balance: number };
 
 export function Account() {
@@ -55,7 +53,6 @@ export function Account() {
     fetch("http://localhost:8080/api/accounts")
       .then((response) => response.json())
       .then((data) => {
-        console.log("data", data);
         setPosts(O.some(data));
       })
       .catch((err) => {
@@ -72,6 +69,7 @@ export function Account() {
     () => pipe(posts, O.map(spacesDoughnutData)),
     [posts]
   );
+
   return pipe(
     posts,
     O.match(
@@ -153,22 +151,14 @@ const data = (spacesAndBalance: BalanceAndSpaces) => ({
       data: pipe(
         spacesDoughnutData(spacesAndBalance).spaces,
         array.map((s) => s.balance),
-        array.prepend(spacesDoughnutData(spacesAndBalance).availableBalance),
-        (a) => {
-          console.log("spaces", a);
-          return a;
-        }
+        array.prepend(spacesDoughnutData(spacesAndBalance).availableBalance)
       ),
       backgroundColor: pipe(
         generateDarkerHexCodes(
           spacesDoughnutData(spacesAndBalance).spaces,
           "#e9a3de"
         ),
-        array.prepend("#CFC0BD"),
-        (a) => {
-          console.log("colours", a);
-          return a;
-        }
+        array.prepend("#CFC0BD")
       ),
       borderColor: "#FFFFFF",
       borderWidth: 1,

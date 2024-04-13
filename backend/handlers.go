@@ -2,18 +2,13 @@ package main
 
 import (
 	"encoding/json"
-	"os/exec"
-	"time"
-
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
+	"time"
 )
-
-var allTransactions []Transaction
-
-const starlingAPIBaseUrl = "https://api.starlingbank.com/api/v2/"
 
 func enableCors(w *http.ResponseWriter) {
 	(*w).Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
@@ -74,6 +69,34 @@ func classifyTransaction(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func updateCategoryForTransactionsHandler(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
+
+	var postBody CategoryUpdatePostBody
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	if err := json.NewDecoder(r.Body).Decode(&postBody); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	accountUid, categoryUid := getStarlingAccountAndCategoryUid().AccountUid, getStarlingAccountAndCategoryUid().CategoryUid
+
+	updateCategory := updateCategoryForTransactions(postBody,accountUid, categoryUid)
+
+	resp, err := json.Marshal(CategoryUpdatePostBody{FeedItemUid: updateCategory.FeedItemUid, Category: updateCategory.Category})
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Println("Error marshalling resp: ", err)
+	} else {
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(resp)
+	}
+}
+
 func starlingTransactions(w http.ResponseWriter, r *http.Request) {
 	enableCors(&w)
 
@@ -82,8 +105,14 @@ func starlingTransactions(w http.ResponseWriter, r *http.Request) {
 	currentLocation := now.Location()
 
 	firstOfMonth := time.Date(currentYear, currentMonth, 1, 0, 0, 0, 0, currentLocation)
+	
+	accountUid, categoryUid := getStarlingAccountAndCategoryUid().AccountUid, getStarlingAccountAndCategoryUid().CategoryUid
 
-	transactions := getTransactionsForTimePeriod(getStarlingAccountAndCategoryUid().AccountUid, getStarlingAccountAndCategoryUid().CategoryUid, firstOfMonth.Format(time.RFC3339), now.Format(time.RFC3339))
+	transactions := getTransactionsForTimePeriod(
+		accountUid,
+		categoryUid,
+		firstOfMonth.Format(time.RFC3339),
+		now.Format(time.RFC3339))
 
 	transactionsResp, err := json.Marshal(TransactionResp{Transactions: transactions.FeedItems})
 
@@ -132,160 +161,6 @@ func starlingUser(w http.ResponseWriter, r *http.Request) {
 		json.Unmarshal(body, &res)
 		fmt.Printf("%+v\n", res)
 
-	}
-
-}
-
-func getSpaces(accountId string) StarlingSpaces {
-	accessToken, exists := os.LookupEnv("ACCESS_TOKEN")
-
-	if !exists {
-		fmt.Println("ERROR: ACCESS_TOKEN not set")
-	} else {
-	}
-
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", starlingAPIBaseUrl+"account/"+accountId+"/spaces", nil)
-	if err != nil {
-		fmt.Println("ERROR: ", err)
-	}
-
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-
-	res, _ := client.Do(req)
-
-	if err != nil {
-		fmt.Println("ERROR: ", err)
-		return StarlingSpaces{}
-	} else {
-		defer res.Body.Close()
-
-		body, err := io.ReadAll(res.Body)
-		if err != nil {
-			fmt.Println(err)
-		}
-		var res StarlingSpaces
-		json.Unmarshal(body, &res)
-		fmt.Printf("%+v\n", res)
-
-		return res
-	}
-
-}
-
-func getAccountBalance(accountId string) StarlingBalance {
-	accessToken, exists := os.LookupEnv("ACCESS_TOKEN")
-
-	if !exists {
-		fmt.Println("ERROR: ACCESS_TOKEN not set")
-	} else {
-	}
-
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", starlingAPIBaseUrl+"accounts/"+accountId+"/balance", nil)
-	if err != nil {
-		fmt.Println("ERROR: ", err)
-	}
-
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-
-	res, _ := client.Do(req)
-
-	if err != nil {
-		fmt.Println("ERROR: ", err)
-		return StarlingBalance{}
-	} else {
-		defer res.Body.Close()
-
-		body, err := io.ReadAll(res.Body)
-		if err != nil {
-			fmt.Println(err)
-		}
-		var res StarlingBalance
-		json.Unmarshal(body, &res)
-		fmt.Printf("%+v\n", res)
-
-		return res
-	}
-
-}
-
-func getStarlingAccountAndCategoryUid() AccountAndCategoryUid {
-
-	accessToken, exists := os.LookupEnv("ACCESS_TOKEN")
-
-	if !exists {
-		fmt.Println("ERROR: ACCESS_TOKEN not set")
-	} else {
-	}
-
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", starlingAPIBaseUrl+"accounts", nil)
-	if err != nil {
-		fmt.Println("ERROR: ", err)
-	}
-
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-
-	res, _ := client.Do(req)
-
-	if err != nil {
-		fmt.Println("ERROR: ", err)
-		return AccountAndCategoryUid{}
-	} else {
-		defer res.Body.Close()
-
-		body, err := io.ReadAll(res.Body)
-		if err != nil {
-			fmt.Println(err)
-		}
-		var res StarlingAccountInfo
-		json.Unmarshal(body, &res)
-
-		return AccountAndCategoryUid{AccountUid: res.Accounts[0].AccountUid, CategoryUid: res.Accounts[0].DefaultCategory}
-
-	}
-
-}
-
-func getTransactionsForTimePeriod(accountUid string, categoryUid string, firstDate string, secondDate string) Transactions {
-	accessToken, exists := os.LookupEnv("ACCESS_TOKEN")
-
-	if !exists {
-		fmt.Println("ERROR: ACCESS_TOKEN not set")
-	} else {
-	}
-
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://api.starlingbank.com/api/v2/feed/account/%s/category/%s/transactions-between", accountUid, categoryUid), nil)
-	if err != nil {
-		fmt.Println("ERROR: ", err)
-	}
-
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-
-	q := req.URL.Query()
-	q.Add("minTransactionTimestamp", firstDate)
-
-	q.Add("maxTransactionTimestamp", secondDate)
-	req.URL.RawQuery = q.Encode()
-
-	res, err := client.Do(req)
-	if err != nil {
-		fmt.Println("ERROR: ", err)
-		return Transactions{}
-	} else {
-		defer res.Body.Close()
-
-		body, err := io.ReadAll(res.Body)
-
-		if err != nil {
-			fmt.Println(err)
-		}
-		var res Transactions
-		json.Unmarshal(body, &res)
-
-		return res
 	}
 
 }

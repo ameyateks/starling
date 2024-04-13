@@ -126,3 +126,14 @@ type BatchPaymentDetails struct {
 type StarlingAccountResp struct {
 	AccountUid string `json:"accountUid"`
 }
+
+type CategoryUpdatePostBody struct {
+	FeedItemUid string `json:"feedItemUid"`
+	Category   string `json:"category"` //TODO: map Starling's categories from docs to own type
+}
+
+type CategoryUpdateReq struct {
+	SpendingCategory string `json:"spendingCategory"`
+	PermanentSpendingCategoryUpdate bool `json:"permanentSpendingCategoryUpdate"`
+	PreviousSpendingCategoryReferencesUpdate bool `json:"previousSpendingCategoryReferencesUpdate"`
+}

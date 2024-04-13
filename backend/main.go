@@ -5,13 +5,27 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
+
+func isDemo() bool {
+	envValue, exists := os.LookupEnv("IS_DEMO")
+
+	var isDemo bool
+
+	if exists {
+		isDemo = strings.ToLower(envValue) == "true" //TODO: use lib helper function to parse boolean better!
+	} else {
+		isDemo = false
+	}
+
+	return isDemo
+}
 
 func init() {
 	if err := godotenv.Load(); err != nil {
@@ -23,7 +37,11 @@ func init() {
 	now := time.Now()
 	yearAgo := now.AddDate(-1, 0, 0)
 
-	transacations := getTransactionsForTimePeriod(accountUid.AccountUid, accountUid.CategoryUid, yearAgo.Format(time.RFC3339), now.Format(time.RFC3339))
+	transacations := getTransactionsForTimePeriod(
+		accountUid.AccountUid,
+		accountUid.CategoryUid,
+		yearAgo.Format(time.RFC3339),
+		now.Format(time.RFC3339))
 
 	allTransactions = transacations.FeedItems
 
@@ -41,28 +59,13 @@ func check(e error) {
 }
 
 func main() {
-	dbHost := os.Getenv("PG_HOST")
-	dbUser := os.Getenv("PG_USER")
-	dbPass := os.Getenv("PG_PASSWORD")
-	dbName := os.Getenv("PG_NAME")
-
-	db, err := sqlx.Connect("postgres", "user="+dbUser+" dbname="+dbName+" sslmode=disable"+" password="+dbPass+" host="+dbHost)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	defer db.Close()
-
-	if err := db.Ping(); err != nil {
-		log.Fatal(err)
-	} else {
-		log.Println("Successfully Connected")
-	}
 
 	mux := mux.NewRouter()
 	// mux.HandleFunc("/api/user", starlingUser).Methods("GET")
 	mux.HandleFunc("/api/accounts", starlingAccount).Methods("GET")
 	mux.HandleFunc("/api/transactions", starlingTransactions).Methods("GET")
 	mux.HandleFunc("/api/knn", classifyTransaction).Methods("POST", "OPTIONS")
+	mux.HandleFunc("/api/category", updateCategoryForTransactionsHandler).Methods("POST", "OPTIONS")
 
 	http.ListenAndServe(":8080", mux)
 }

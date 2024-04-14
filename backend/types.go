@@ -137,3 +137,17 @@ type CategoryUpdateReq struct {
 	PermanentSpendingCategoryUpdate bool `json:"permanentSpendingCategoryUpdate"`
 	PreviousSpendingCategoryReferencesUpdate bool `json:"previousSpendingCategoryReferencesUpdate"`
 }
+
+type ErrorResponse struct {
+	StatusCode int  `json:"statusCode"`
+	Error    string  `json:"error"`
+}
+
+type RequestError struct {
+	StatusCode int  `json:"statusCode"`
+	Message    string  `json:"message"`
+}
+
+func (m *RequestError) Error() string {
+	return m.Message
+}

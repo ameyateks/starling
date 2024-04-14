@@ -86,7 +86,8 @@ function List(props: { transactions: Transaction[] }): JSX.Element {
   }
 
   function closeModal() {
-    return setIsOpen(O.none);
+    setIsOpen(O.none);
+    setCatError(O.none);
   }
 
   const [_, setIsLoading] = useState(false);
@@ -94,8 +95,9 @@ function List(props: { transactions: Transaction[] }): JSX.Element {
     O.Option<ClassifiedTransaction>
   >(O.none);
 
+  const [updateCatError, setCatError] = useState<O.Option<string>>(O.none);
+
   const [isUpdateLoading, setUpdateLoading] = useState(false);
-  const [updateResp, setUpdateResp] = useState<O.Option<string>>(O.none);
 
   const handleClassifiedTransactionClick = async (transaction: Transaction) => {
     setIsLoading(true);
@@ -281,9 +283,11 @@ function List(props: { transactions: Transaction[] }): JSX.Element {
                                       transaction,
                                       transactions,
                                       isUpdateLoading,
+                                      updateCatError,
                                       setUpdateLoading,
                                       setTransactions,
                                       closeModal,
+                                      setCatError,
                                     })}
                                   </div>
                                 </div>
@@ -312,6 +316,8 @@ function updateSpendingCategoryOnTransaction({
   setUpdateLoading,
   setTransactions,
   closeModal,
+  setCatError,
+  updateCatError,
 }: {
   category: O.Option<ClassifiedTransaction>;
   transaction: Transaction;
@@ -320,6 +326,8 @@ function updateSpendingCategoryOnTransaction({
   setUpdateLoading: React.Dispatch<React.SetStateAction<boolean>>;
   setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
   closeModal: () => void;
+  setCatError: React.Dispatch<React.SetStateAction<O.Option<string>>>;
+  updateCatError: O.Option<string>;
 }): JSX.Element {
   const handleUpdateCategoryClick = async (
     newCategory: string,
@@ -342,8 +350,12 @@ function updateSpendingCategoryOnTransaction({
       pipe(
         responseData,
         t.type({ category: t.string, feedItemUid: t.string }).decode,
+        E.mapLeft(utils.validationErrorsToString),
         E.match(
-          (err) => console.error(JSON.stringify(err)),
+          (_) => {
+            console.error(JSON.stringify(responseData)),
+              setCatError(O.some(JSON.stringify(responseData)));
+          },
           (data) => {
             setTransactions(
               pipe(
@@ -397,21 +409,25 @@ function updateSpendingCategoryOnTransaction({
                 >
                   <div className="w-full h-full flex flex-col justify-center place-items-center text-white">
                     Update Category
-                    <div className="flex flex-row space-x-2 w-full items-center justify-center">
-                      {
-                        <div className="text-white">
-                          {utils.categoryToFormattedString(
-                            transaction.spendingCategory
-                          )}
-                        </div>
-                      }
-                      <ArrowRightIcon className="w-5 h-5" />
-                      {
-                        <div className="text-white">
-                          {utils.categoryToFormattedString(data.category)}
-                        </div>
-                      }
-                    </div>
+                    {O.isSome(updateCatError) ? (
+                      <div className="text-red">{updateCatError.value}</div>
+                    ) : (
+                      <div className="flex flex-row space-x-2 w-full items-center justify-center">
+                        {
+                          <div className="text-white">
+                            {utils.categoryToFormattedString(
+                              transaction.spendingCategory
+                            )}
+                          </div>
+                        }
+                        <ArrowRightIcon className="w-5 h-5" />
+                        {
+                          <div className="text-white">
+                            {utils.categoryToFormattedString(data.category)}
+                          </div>
+                        }
+                      </div>
+                    )}
                   </div>
                 </button>
               )}

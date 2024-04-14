@@ -102,6 +102,8 @@ func getStarlingAccountAndCategoryUid() AccountAndCategoryUid {
 		return accountAndCatUidTestData
 	}
 
+	fmt.Println("Getting account and category uid")
+
 	accessToken, exists := os.LookupEnv("ACCESS_TOKEN")
 
 	if !exists {
@@ -137,7 +139,7 @@ func getStarlingAccountAndCategoryUid() AccountAndCategoryUid {
 
 }
 
-func updateCategoryForTransactions(categoryUpdate CategoryUpdatePostBody, accountUid string, categoryUid string) CategoryUpdatePostBody {
+func updateCategoryForTransactions(categoryUpdate CategoryUpdatePostBody, accountUid string, categoryUid string) (CategoryUpdatePostBody, error) {
 	accessToken, exists := os.LookupEnv("ACCESS_TOKEN")
 
 	if !exists {
@@ -147,7 +149,7 @@ func updateCategoryForTransactions(categoryUpdate CategoryUpdatePostBody, accoun
 	postBody, marshalErr := json.Marshal(CategoryUpdateReq{SpendingCategory: categoryUpdate.Category, PermanentSpendingCategoryUpdate: false, PreviousSpendingCategoryReferencesUpdate: false})
 	if marshalErr != nil {
 		fmt.Println("ERROR: ", marshalErr)
-		//TODO: return error status code
+		return CategoryUpdatePostBody{}, marshalErr
 	}
 
 	client := &http.Client{}
@@ -161,31 +163,27 @@ func updateCategoryForTransactions(categoryUpdate CategoryUpdatePostBody, accoun
 			fmt.Println("ERROR: ", err)
 		}
 	req.Header.Add("Content-Type", "application/json;charset=UTF-8"); 
-	//without this was getting 415 invalid content type but this error was not displaying in FE. Need a way to display this FE
 	
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 
-	res, respErr := client.Do(req) 
+	res, clientErr := client.Do(req) 
 
-	fmt.Print(res)
-
-	if respErr != nil {
-		fmt.Println("ERROR: ", err)
-		return CategoryUpdatePostBody{}
+	if clientErr != nil {
+		fmt.Println("ERROR: ", clientErr)
+		return CategoryUpdatePostBody{}, &RequestError{StatusCode: res.StatusCode,Message: clientErr.Error()}
+	} else if res.StatusCode != 200 {
+		return CategoryUpdatePostBody{}, &RequestError{StatusCode: res.StatusCode, Message: "Failed to update category"}
 	} else {
 		defer res.Body.Close()
 
 		_, err := io.ReadAll(res.Body)
 
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println("readerr", err)
 		}
 		
-		return categoryUpdate //is this best practice? returning thing we passed in
+		return categoryUpdate, nil //is this best practice? returning thing we passed in
 	}
-
-
-	
 }
 
 func getTransactionsForTimePeriod(accountUid string, categoryUid string, firstDate string, secondDate string) Transactions {

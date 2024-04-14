@@ -1,5 +1,4 @@
 "use client";
-import Loading from "./loading";
 import React, { useState, useEffect, useMemo } from "react";
 import { pipe } from "fp-ts/lib/function";
 import * as O from "fp-ts/lib/Option";
@@ -16,6 +15,7 @@ import {
 } from "chart.js";
 import * as ord from "fp-ts/lib/Ord";
 import Ord = ord.Ord;
+import Spinner from "./components/Spinner";
 export type StarlingAmount = { minorUnits: number; currency: string };
 
 type BalanceAndSpaces = {
@@ -75,7 +75,7 @@ export function Account() {
     O.match(
       () => (
         <div className="flex justify-center items-center h-full">
-          <Loading />
+          <Spinner />
         </div>
       ),
       (spacesAndBalance) => (

@@ -1,5 +1,4 @@
 "use client";
-import Loading from "./loading";
 import React, { useState, useEffect, Fragment } from "react";
 import { pipe } from "fp-ts/lib/function";
 import * as O from "fp-ts/lib/Option";
@@ -61,7 +60,7 @@ export function Transactions() {
 
   return !transactions.length ? (
     <div className="flex justify-center items-center h-full">
-      <Loading />
+      <Spinner />
     </div>
   ) : (
     <div className="flex flex-col space-y-1 p-2 h-full">

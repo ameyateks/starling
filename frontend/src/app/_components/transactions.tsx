@@ -4,7 +4,7 @@ import { pipe } from "fp-ts/lib/function";
 import * as O from "fp-ts/lib/Option";
 import * as E from "fp-ts/lib/Either";
 import * as A from "fp-ts/Array";
-import * as utils from "../../utils";
+import * as utils from "../../../utils";
 export type StarlingAmount = { minorUnits: number; currency: string };
 import { Dialog, Transition } from "@headlessui/react";
 import {
@@ -14,7 +14,7 @@ import {
   XCircleIcon,
 } from "@heroicons/react/24/solid";
 import * as t from "io-ts";
-import Spinner from "./components/Spinner";
+import Spinner from "./spinner";
 
 //TODO: use react hook useMemo to memoize operations
 

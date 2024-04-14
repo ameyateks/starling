@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { pipe } from "fp-ts/lib/function";
 import * as O from "fp-ts/lib/Option";
 import { apply, array, option, string } from "fp-ts";
-import * as util from "../../utils";
+import * as util from "../../../utils";
 import { Doughnut } from "react-chartjs-2";
 import {
   Chart,
@@ -15,7 +15,7 @@ import {
 } from "chart.js";
 import * as ord from "fp-ts/lib/Ord";
 import Ord = ord.Ord;
-import Spinner from "./components/Spinner";
+import Spinner from "./spinner";
 export type StarlingAmount = { minorUnits: number; currency: string };
 
 type BalanceAndSpaces = {

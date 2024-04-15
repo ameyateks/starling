@@ -2,10 +2,10 @@ package routes
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"starling/services"
 	"starling/types"
+	"starling/utils"
 )
 
 func starlingAccount(w http.ResponseWriter, r *http.Request) {
@@ -15,13 +15,15 @@ func starlingAccount(w http.ResponseWriter, r *http.Request) {
 
 	balance := services.GetAccountBalance(accountUid.AccountUid)
 
-	spaces := services.GetSpaces(accountUid.AccountUid)
+	spaces, spacesErr := services.GetSpaces(accountUid.AccountUid)
+	if spacesErr != nil {
+		utils.WriteError(w, spacesErr, http.StatusInternalServerError)
+	}
 
 	balanceResp, err := json.Marshal(types.StarlingBalanceAndSpacesResp{Balance: balance.EffectiveBalance, Spaces: spaces})
 
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Println("Error marshalling resp: ", err)
+		utils.WriteError(w, err, http.StatusInternalServerError)
 	} else {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")

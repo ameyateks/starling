@@ -2,6 +2,7 @@ package utils
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"starling/types"
@@ -34,4 +35,16 @@ func WriteError(w http.ResponseWriter, reqError error, statusCode int)  {
 	   os.Exit(1)
    }
 	w.Write(errResp)
+	w.WriteHeader(statusCode)
+}
+
+func SourceAccessToken() (string, error) {
+	accessToken, exists := os.LookupEnv("ACCESS_TOKEN")
+
+	if !exists {
+		fmt.Println("ERROR: ACCESS_TOKEN not set")
+		return "", &types.RequestError{StatusCode: http.StatusInternalServerError, Message: "Failed to source access token"}
+	} else {
+		return accessToken, nil
+	}
 }

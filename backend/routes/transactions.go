@@ -22,17 +22,20 @@ func starlingTransactions(w http.ResponseWriter, r *http.Request) {
 
 	accountUid, categoryUid :=  services.GetStarlingAccountAndCategoryUid().AccountUid, services.GetStarlingAccountAndCategoryUid().CategoryUid
 
-	transactions := services.GetTransactionsForTimePeriod(
+	transactions, getTransactionsErr := services.GetTransactionsForTimePeriod(
 		accountUid,
 		categoryUid,
 		firstOfMonth.Format(time.RFC3339),
 		now.Format(time.RFC3339))
 
+	if(getTransactionsErr != nil) {
+		utils.WriteError(w, getTransactionsErr, http.StatusInternalServerError)
+	}
+
 	transactionsResp, err := json.Marshal(types.TransactionResp{Transactions: transactions.FeedItems})
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Println("Error marshalling resp: ", err)
 	} else {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
@@ -89,7 +92,7 @@ func updateCategoryForTransactionsHandler(w http.ResponseWriter, r *http.Request
 	resp, err := json.Marshal(types.CategoryUpdatePostBody{FeedItemUid: updateCategory.FeedItemUid, Category: updateCategory.Category})
 
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		utils.WriteError(w, err, http.StatusInternalServerError)
 	} else if putError != nil {
 		utils.WriteError(w, putError, http.StatusInternalServerError)
 

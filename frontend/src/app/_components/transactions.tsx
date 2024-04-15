@@ -36,20 +36,21 @@ type ClassifiedTransaction = {
 };
 
 export function Transactions() {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState<O.Option<Transaction[]>>(
+    O.none
+  );
   useEffect(() => {
     fetch("http://localhost:8080/api/transactions")
       .then((response) => response.json())
       .then((data) => {
-        console.log("sdgf", data.transactions);
-        setTransactions(data.transactions);
+        setTransactions(O.some(data));
       })
       .catch((err) => {
         console.log(err.message);
       });
   }, []);
 
-  return !transactions.length ? (
+  return O.isNone(transactions) ? (
     <div className="flex justify-center items-center h-full">
       <Spinner />
     </div>
@@ -58,9 +59,10 @@ export function Transactions() {
       <h5 className="heading text-white font-bold ">
         Transactions (Last 30 days)
       </h5>
-      {transactions.length > 0 ? transactions.length : 0} transactions
+      {transactions.value.length > 0 ? transactions.value.length : 0}{" "}
+      transactions
       <div className="bg-beige rounded-md h-full p-2">
-        <List transactions={transactions} />
+        <List transactions={transactions.value} />
       </div>
     </div>
   );

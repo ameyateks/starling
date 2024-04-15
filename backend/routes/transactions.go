@@ -28,7 +28,6 @@ func starlingTransactionsHandler(w http.ResponseWriter, r *http.Request, db *sql
 	thirtyDaysAgo := now.AddDate(0, 0, -30)
 
 	transactions, getTransactionsErr  := dao.FetchTransactionsBetween(db, thirtyDaysAgo.Format(time.RFC3339), now.Format(time.RFC3339))
-
 	if(getTransactionsErr != nil) {
 		utils.WriteError(w, getTransactionsErr, http.StatusInternalServerError)
 	}

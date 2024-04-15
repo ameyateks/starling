@@ -77,10 +77,12 @@ func GetTransactionsForTimePeriod(accountUid string, categoryUid string, firstDa
 	req.URL.RawQuery = q.Encode()
 
 	res, clientErr := client.Do(req)
+	fmt.Print(req.URL)
+	fmt.Print("response",res)
 	if clientErr != nil {
 		return types.Transactions{}, &types.RequestError{StatusCode: res.StatusCode, Message: clientErr.Error()}
 	}  else if res.StatusCode != 200 {
-		return types.Transactions{}, &types.RequestError{StatusCode: res.StatusCode, Message: "Failed to update category"}
+		return types.Transactions{}, &types.RequestError{StatusCode: res.StatusCode, Message: "failed to get transactions"}
 	} else {
 		defer res.Body.Close()
 

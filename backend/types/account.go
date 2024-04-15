@@ -13,10 +13,10 @@ type StarlingAccount struct {
 	Name            string `json:"name"`
 }
 
-
 type AccountAndCategoryUid struct {
 	AccountUid  string `json:"accountUid"`
 	CategoryUid string `json:"categoryUid"`
+	CreatedAt   string `json:"createdAt"`
 }
 
 type StarlingAccountResp struct {

@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/jmoiron/sqlx"
 )
 
 func enableCors(w *http.ResponseWriter) {
@@ -12,13 +13,15 @@ func enableCors(w *http.ResponseWriter) {
 	(*w).Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Accept")
 }
 
-func CreateRouter() *mux.Router{
+func CreateRouter(db *sqlx.DB) *mux.Router{
 	mux := mux.NewRouter()
 	// mux.HandleFunc("/api/user", starlingUser).Methods("GET")
-	mux.HandleFunc("/api/accounts", starlingAccount).Methods("GET")
-	mux.HandleFunc("/api/transactions", starlingTransactions).Methods("GET")
-	mux.HandleFunc("/api/knn", classifyTransaction).Methods("POST", "OPTIONS")
-	mux.HandleFunc("/api/category", updateCategoryForTransactionsHandler).Methods("POST", "OPTIONS")
+
+	getStarlingTransaction := wrapStarlingTransactionsHandler(db)
+	
+	mux.HandleFunc("/api/accounts", starlingAccount).Methods(http.MethodGet)
+	mux.HandleFunc("/api/transactions", getStarlingTransaction).Methods(http.MethodGet)
+	mux.HandleFunc("/api/knn", classifyTransaction).Methods(http.MethodPost, http.MethodOptions)
+	mux.HandleFunc("/api/category", updateCategoryForTransactionsHandler).Methods(http.MethodPost, http.MethodOptions)
 	return mux
 }
-

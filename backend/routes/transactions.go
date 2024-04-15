@@ -5,34 +5,35 @@ import (
 	"fmt"
 	"net/http"
 	"os/exec"
+	"starling/dao"
 	"starling/services"
 	"starling/types"
 	"starling/utils"
 	"time"
+
+	"github.com/jmoiron/sqlx"
 )
 
-func starlingTransactions(w http.ResponseWriter, r *http.Request) {
+func wrapStarlingTransactionsHandler(db *sqlx.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		starlingTransactionsHandler(w, r, db)
+	}
+}
+
+func starlingTransactionsHandler(w http.ResponseWriter, r *http.Request, db *sqlx.DB) {
 	enableCors(&w)
 
 	now := time.Now()
-	currentYear, currentMonth, _ := now.Date()
-	currentLocation := now.Location()
 
-	firstOfMonth := time.Date(currentYear, currentMonth, 1, 0, 0, 0, 0, currentLocation)
+	thirtyDaysAgo := now.AddDate(0, 0, -30)
 
-	accountUid, categoryUid :=  services.GetStarlingAccountAndCategoryUid().AccountUid, services.GetStarlingAccountAndCategoryUid().CategoryUid
-
-	transactions, getTransactionsErr := services.GetTransactionsForTimePeriod(
-		accountUid,
-		categoryUid,
-		firstOfMonth.Format(time.RFC3339),
-		now.Format(time.RFC3339))
+	transactions, getTransactionsErr  := dao.FetchTransactionsBetween(db, thirtyDaysAgo.Format(time.RFC3339), now.Format(time.RFC3339))
 
 	if(getTransactionsErr != nil) {
 		utils.WriteError(w, getTransactionsErr, http.StatusInternalServerError)
 	}
 
-	transactionsResp, err := json.Marshal(types.TransactionResp{Transactions: transactions.FeedItems})
+	transactionsResp, err := json.Marshal(transactions)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

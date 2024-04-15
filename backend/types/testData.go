@@ -79,7 +79,34 @@ func GetRdomCategory() string {
 	return SpendingCategories[rand.Intn(len(SpendingCategories))]
 }
 
-var TransacationTestDataArr = []Transaction{
+var TransactionTestData = Transaction{
+		FeedItemUid:                   "feed-uid-1",
+		CategoryUid:                   "category-uid-1",
+		Amount:                        SignedCurrencyAndAmount{Currency: "USD", MinorUnits: 1000},
+		SourceAmount:                  SignedCurrencyAndAmount{Currency: "USD", MinorUnits: 1050},
+		Direction:                     "OUT",
+		UpdatedAt:                     time.Now().Format(time.RFC3339),
+		TransactionTime:               time.Now().Format(time.RFC3339),
+		SettlementTime:                time.Now().Add(time.Hour).Format(time.RFC3339),
+		Source:                        "bank",
+		SourceSubType:                 "debit",
+		Status:                        "completed",
+		TransactingApplicationUserUid: "user-uid-1",
+		CounterPartyType:              "individual",
+		CounterPartyUid:               "counterparty-uid-1",
+		CounterPartyName:              "John Doe",
+		ExchangeRate:                  1,
+		TotalFees:                     50,
+		TotalFeeAmount:                SignedCurrencyAndAmount{Currency: "USD", MinorUnits: 50},
+		Reference:                     "ref-1",
+		Country:                       "US",
+		SpendingCategory:              GetRdomCategory(),
+		UserNote:                      "Random test note",
+		HasAttachment:                 true,
+		HasReceipt:                    true,
+	}
+
+var TransacationsTestDataArr = []Transaction{
 	{
 		FeedItemUid:                   "feed-uid-1",
 		CategoryUid:                   "category-uid-1",
@@ -966,4 +993,4 @@ var TransacationTestDataArr = []Transaction{
 	},
 }
 
-var TransactionsTestData = Transactions{FeedItems: TransacationTestDataArr}
+var TransactionsTestData = Transactions{FeedItems: TransacationsTestDataArr}

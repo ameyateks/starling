@@ -21,24 +21,14 @@ import Spinner from "./spinner";
 type Transaction = {
   feedItemUid: string;
   categoryUid: string;
-  amount: StarlingAmount;
-  sourceAmount: StarlingAmount;
+  amount: number;
   direction: "IN" | "OUT";
-  updatedAt: string; //TODO: change to date
   transactionTime: string; //TODO: change to date
-  source: string;
-  sourceSubType: string;
-  status: string;
-  transactingApplicationUserUid: string;
-  counterPartyType: string;
-  counterPartyUid: string;
   counterPartyName: string;
-  counterPartySubEntityUid: string;
+  counterPartySubEntityName: string;
   reference: string;
   country: string;
   spendingCategory: string;
-  hasAttachment: boolean;
-  hasReceipt: boolean;
 };
 
 type ClassifiedTransaction = {
@@ -51,6 +41,7 @@ export function Transactions() {
     fetch("http://localhost:8080/api/transactions")
       .then((response) => response.json())
       .then((data) => {
+        console.log("sdgf", data.transactions);
         setTransactions(data.transactions);
       })
       .catch((err) => {
@@ -162,9 +153,7 @@ function List(props: { transactions: Transaction[] }): JSX.Element {
                 </div>
                 <div className="w-1/3 relative">
                   <div className="absolute top-2 right-2 text-black font-bold">
-                    {utils.priceFormatter2dp.format(
-                      transaction.amount.minorUnits / 100
-                    )}
+                    {utils.priceFormatter2dp.format(transaction.amount / 100)}
                   </div>
                 </div>
               </button>
@@ -266,7 +255,7 @@ function List(props: { transactions: Transaction[] }): JSX.Element {
                                         )}
                                       >
                                         {utils.priceFormatter2dp.format(
-                                          transaction.amount.minorUnits / 100
+                                          transaction.amount / 100
                                         )}
                                         {transaction.direction === "OUT" ? (
                                           <ChevronDoubleDownIcon className="h-5 w-5" />

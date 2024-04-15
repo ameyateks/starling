@@ -98,8 +98,6 @@ func GetStarlingAccountAndCategoryUid() types.AccountAndCategoryUid {
 		return types.AccountAndCatUidTestData
 	}
 
-	fmt.Println("Getting account and category uid")
-
 	accessToken, exists := os.LookupEnv("ACCESS_TOKEN")
 
 	if !exists {
@@ -129,7 +127,7 @@ func GetStarlingAccountAndCategoryUid() types.AccountAndCategoryUid {
 		var res types.StarlingAccountInfo
 		json.Unmarshal(body, &res)
 
-		return types.AccountAndCategoryUid{AccountUid: res.Accounts[0].AccountUid, CategoryUid: res.Accounts[0].DefaultCategory}
+		return types.AccountAndCategoryUid{AccountUid: res.Accounts[0].AccountUid, CategoryUid: res.Accounts[0].DefaultCategory, CreatedAt: res.Accounts[0].CreatedAt}
 
 	}
 

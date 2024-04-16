@@ -7,6 +7,32 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+func FetchAllTransactions(db *sqlx.DB) ([]entities.Transaction, error) {
+	query := `
+	SELECT
+		feed_item_uid
+		, category_uid
+		, amount
+		, direction
+		, transaction_time
+		, counter_party_name
+		, counter_party_sub_entity_name
+		, reference
+		, spending_category
+		, user_note
+	FROM transactions
+	`
+
+	var transactions []entities.Transaction
+	err := db.Select(&transactions, query)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch all transactions with error: %v", err)
+	}
+
+	return transactions, nil
+}
+
 func FetchTransactionsBetween(db *sqlx.DB, from string, to string) ([]entities.Transaction, error) {
 	query := `
 	SELECT

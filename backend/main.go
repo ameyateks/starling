@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"os"
 	"starling/routes"
-	"starling/services"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
@@ -18,8 +17,6 @@ func init() {
 	if err := godotenv.Load(); err != nil {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
-
-	services.RunningKnnOnTransactions()
 }
 
 func main() {
@@ -38,6 +35,11 @@ func main() {
 		log.Fatal(err)
 	} else {
 		log.Println("Successfully Connected")
+	}
+
+	knnErr := routes.RunningKnnOnTransactions(db)
+	if knnErr != nil {
+		panic(err)
 	}
 
 	mux := routes.CreateRouter(db)

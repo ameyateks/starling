@@ -66,7 +66,7 @@ file.close()
 
 parseTransaction = lambda x: Transaction(
     x["spendingCategory"],
-    x["amount"]["minorUnits"],
+    x["amount"],
     datetime.fromisoformat(x["transactionTime"]),
 )
 currentTransaction = parseTransaction(currentTransaction)

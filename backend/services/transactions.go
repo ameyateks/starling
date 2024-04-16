@@ -6,10 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"starling/types"
 	"starling/utils"
-	"time"
 )
 
 func UpdateCategoryForTransactions(categoryUpdate types.CategoryUpdatePostBody, accountUid string, categoryUid string) (types.CategoryUpdatePostBody, error) {
@@ -97,31 +95,4 @@ func GetTransactionsForTimePeriod(accountUid string, categoryUid string, firstDa
 		return res, nil
 	}
 
-}
-
-func RunningKnnOnTransactions() {
-
-	accountUid := GetStarlingAccountAndCategoryUid()
-
-	now := time.Now()
-	yearAgo := now.AddDate(-1, 0, 0)
-
-	transacations, getErr := GetTransactionsForTimePeriod(
-		accountUid.AccountUid,
-		accountUid.CategoryUid,
-		yearAgo.Format(time.RFC3339), 
-		//TODO: rather than just use arbitary one year ago today date, call Starling's /api/v2/accounts
-		// to get account information specifically when main account was created_at and use that as the
-		// start date of all transactions, this ensures we retrieve all available transactions
-		now.Format(time.RFC3339))
-
-	if getErr != nil { fmt.Print("ERROR: ", getErr)}
-
-	allTransactions := transacations.FeedItems
-
-	allTransactionsBytes, transactionsErr := json.Marshal(allTransactions)
-	utils.Check(transactionsErr)
-
-	err := os.WriteFile("/tmp/transactions.json", allTransactionsBytes, 0644)
-	utils.Check(err)
 }

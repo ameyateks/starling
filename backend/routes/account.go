@@ -13,11 +13,16 @@ func starlingAccount(w http.ResponseWriter, r *http.Request) {
 
 	accountUid := services.GetStarlingAccountAndCategoryUid()
 
-	balance := services.GetAccountBalance(accountUid.AccountUid)
+	balance, balanceErr := services.GetAccountBalance(accountUid.AccountUid)
+	if balanceErr != nil { 
+		utils.WriteError(w, balanceErr, http.StatusInternalServerError)
+		return
+	}
 
 	spaces, spacesErr := services.GetSpaces(accountUid.AccountUid)
 	if spacesErr != nil {
 		utils.WriteError(w, spacesErr, http.StatusInternalServerError)
+		return
 	}
 
 	balanceResp, err := json.Marshal(types.StarlingBalanceAndSpacesResp{Balance: balance.EffectiveBalance, Spaces: spaces})

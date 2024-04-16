@@ -71,3 +71,7 @@ type CategoryUpdateReq struct {
 	PermanentSpendingCategoryUpdate          bool   `json:"permanentSpendingCategoryUpdate"`
 	PreviousSpendingCategoryReferencesUpdate bool   `json:"previousSpendingCategoryReferencesUpdate"`
 }
+
+type KNNResp struct {
+	Category string `json:"category"`
+}

@@ -34,8 +34,9 @@ func WriteError(w http.ResponseWriter, reqError error, statusCode int)  {
 	if (err != nil) {
 	   os.Exit(1)
    }
+   	w.WriteHeader(statusCode)
 	w.Write(errResp)
-	w.WriteHeader(statusCode)
+	
 }
 
 func SourceAccessToken() (string, error) {

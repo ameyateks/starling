@@ -52,31 +52,29 @@ func GetSpaces(accountId string) (types.StarlingSpaces, error) {
 
 }
 
-func GetAccountBalance(accountId string) types.StarlingBalance {
+func GetAccountBalance(accountId string) (types.StarlingBalance, error) {
 	if utils.IsDemo() {
-		return types.StarlingBalanceTestData
+		return types.StarlingBalanceTestData, nil
 	}
 
-	accessToken, exists := os.LookupEnv("ACCESS_TOKEN")
-
-	if !exists {
-		fmt.Println("ERROR: ACCESS_TOKEN not set")
-	} else {
+	accessToken, accessTokenErr := utils.SourceAccessToken()
+	if(accessTokenErr != nil) {
+		return types.StarlingBalance{}, accessTokenErr
 	}
 
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", StarlingAPIBaseUrl+"accounts/"+accountId+"/balance", nil)
-	if err != nil {
-		fmt.Println("ERROR: ", err)
+	req, newHttpErr := http.NewRequest("GET", StarlingAPIBaseUrl+"accounts/"+accountId+"/balance", nil)
+	if newHttpErr != nil {
+		return types.StarlingBalance{}, newHttpErr
 	}
 
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 
-	res, _ := client.Do(req)
-
-	if err != nil {
-		fmt.Println("ERROR: ", err)
-		return types.StarlingBalance{}
+	res, clientErr := client.Do(req)
+	if clientErr != nil {
+		return types.StarlingBalance{}, &types.RequestError{StatusCode: res.StatusCode, Message: clientErr.Error()}
+	} else if res.StatusCode != 200 {
+		return types.StarlingBalance{}, &types.RequestError{StatusCode: res.StatusCode, Message: "failed to get Starling Balance"}
 	} else {
 		defer res.Body.Close()
 
@@ -88,7 +86,7 @@ func GetAccountBalance(accountId string) types.StarlingBalance {
 		json.Unmarshal(body, &res)
 		fmt.Printf("%+v\n", res)
 
-		return res
+		return res, nil
 	}
 
 }

@@ -4,14 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
-	"os/exec"
-	"starling/dao"
 	"starling/dao/entities"
 	"starling/services"
-	"starling/types"
+	"starling/starlingapi"
 	"starling/utils"
-	"time"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -23,13 +19,8 @@ func wrapStarlingTransactionsHandler(db *sqlx.DB) http.HandlerFunc {
 }
 
 func starlingTransactionsHandler(w http.ResponseWriter, r *http.Request, db *sqlx.DB) {
-	enableCors(&w)
 
-	now := time.Now()
-
-	thirtyDaysAgo := now.AddDate(0, 0, -30)
-
-	transactions, getTransactionsErr  := dao.FetchTransactionsBetween(db, thirtyDaysAgo.Format(time.RFC3339), now.Format(time.RFC3339))
+	transactions, getTransactionsErr  := services.GetTransactions(db)
 	if(getTransactionsErr != nil) {
 		utils.WriteError(w, getTransactionsErr, http.StatusInternalServerError)
 		return
@@ -41,44 +32,31 @@ func starlingTransactionsHandler(w http.ResponseWriter, r *http.Request, db *sql
 		w.WriteHeader(http.StatusInternalServerError)
 	} else {
 		w.WriteHeader(http.StatusOK)
-		w.Header().Set("Content-Type", "application/json")
 		w.Write(transactionsResp)
 	}
 }
 
 func classifyTransaction(w http.ResponseWriter, r *http.Request) {
-	enableCors(&w)
 
 	var requestBody entities.Transaction
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
+	
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
 		utils.WriteError(w, err, http.StatusInternalServerError)
 		return
 	}
 
-	transactionFromReq, oneErr := json.Marshal(requestBody)
+	classificationResp, err := services.ClassifyTransaction(requestBody)
 
-	if oneErr != nil {
-		utils.WriteError(w, oneErr, http.StatusInternalServerError)
-		return
-	}
-
-	pythonCommand := exec.Command("python3", "./data/knn.py", string(transactionFromReq))
-	classificationResp, pythonErr := pythonCommand.CombinedOutput()
-	if pythonErr != nil {
+	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Println("Error running python script: ", pythonErr)
+		fmt.Println("Error running python script: ", err)
 	}
 	w.Write(classificationResp)
 }
 
 func updateCategoryForTransactionsHandler(w http.ResponseWriter, r *http.Request) {
-	enableCors(&w)
 
-	var postBody types.CategoryUpdatePostBody
+	var postBody starlingapi.CategoryUpdatePostBody
 	if r.Method == "OPTIONS" {
 		w.WriteHeader(http.StatusOK)
 		return
@@ -87,37 +65,17 @@ func updateCategoryForTransactionsHandler(w http.ResponseWriter, r *http.Request
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	accountUid, categoryUid := services.GetStarlingAccountAndCategoryUid().AccountUid, services.GetStarlingAccountAndCategoryUid().CategoryUid
 
-	updateCategory, putError := services.UpdateCategoryForTransactions(postBody, accountUid, categoryUid)
+	err := services.UpdateTransactionCategory(postBody.FeedItemUid, postBody.Category)
 
-	resp, err := json.Marshal(types.CategoryUpdatePostBody{FeedItemUid: updateCategory.FeedItemUid, Category: updateCategory.Category})
-
+    resp, jsonErr := json.Marshal(postBody)
 	if err != nil {
 		utils.WriteError(w, err, http.StatusInternalServerError)
-	} else if putError != nil {
-		utils.WriteError(w, putError, http.StatusInternalServerError)
-
+	} else if jsonErr != nil {
+		utils.WriteError(w, jsonErr, http.StatusInternalServerError)
 	} else {
 		w.WriteHeader(http.StatusOK)
-		w.Header().Set("Content-Type", "application/json")
 		w.Write(resp)
 	}
 }
 
-func RunningKnnOnTransactions(db *sqlx.DB) (error) {
-
-	transactions, getTransactionsErr  := dao.FetchAllTransactions(db)
-	if(getTransactionsErr != nil) {
-		return fmt.Errorf("failed to fetch all transactions with error: %v", getTransactionsErr)
-	}
-
-	transactionsResp, marshallErr := json.Marshal(transactions)
-	if(marshallErr != nil) {
-		return fmt.Errorf("failed to marshal transactions with error: %v", marshallErr)
-	}
-
-	err := os.WriteFile("/tmp/transactions.json", transactionsResp, 0644)
-	utils.Check(err)
-	return nil
-}

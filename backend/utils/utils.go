@@ -2,6 +2,7 @@ package utils
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -44,7 +45,7 @@ func SourceAccessToken() (string, error) {
 
 	if !exists {
 		fmt.Println("ERROR: ACCESS_TOKEN not set")
-		return "", &types.RequestError{StatusCode: http.StatusInternalServerError, Message: "Failed to source access token"}
+		return "", errors.New("cannot find ACCESS_TOKEN in .env")
 	} else {
 		return accessToken, nil
 	}

@@ -5,13 +5,11 @@ import (
 	"net/http"
 	"os"
 	"starling/routes"
+	"starling/services"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
-	_ "github.com/lib/pq"
 )
-
-var db *sqlx.DB
 
 func init() {
 	if err := godotenv.Load(); err != nil {
@@ -37,12 +35,14 @@ func main() {
 		log.Println("Successfully Connected")
 	}
 
-	knnErr := routes.RunningKnnOnTransactions(db)
+	knnErr := services.RunningKnnOnTransactions(db)
 	if knnErr != nil {
 		panic(err)
 	}
 
-	mux := routes.CreateRouter(db)
+	router := routes.CreateRouter(db)
+	router.Use(routes.CorsMiddleware)
+	router.Use(routes.JsonResponseMiddleware)
 
-	http.ListenAndServe(":8080", mux)
+	http.ListenAndServe(":8080", router)
 }

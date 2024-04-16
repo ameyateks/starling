@@ -1,98 +1,56 @@
 package services
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
-	"starling/types"
+	"os"
+	"os/exec"
+	"starling/dao"
+	"starling/dao/entities"
+	"starling/starlingapi"
 	"starling/utils"
+	"time"
+
+	"github.com/jmoiron/sqlx"
 )
 
-func UpdateCategoryForTransactions(categoryUpdate types.CategoryUpdatePostBody, accountUid string, categoryUid string) (types.CategoryUpdatePostBody, error) {
-	accessToken, accessTokenErr := utils.SourceAccessToken()
-	if(accessTokenErr != nil) {
-		return types.CategoryUpdatePostBody{}, accessTokenErr
-	}
+func GetTransactions(db *sqlx.DB) ([]entities.Transaction, error) {
+	now := time.Now()
 
-	postBody, marshalErr := json.Marshal(types.CategoryUpdateReq{SpendingCategory: categoryUpdate.Category, PermanentSpendingCategoryUpdate: false, PreviousSpendingCategoryReferencesUpdate: false})
-	if marshalErr != nil {
-		fmt.Println("ERROR: ", marshalErr)
-		return types.CategoryUpdatePostBody{}, marshalErr
-	}
+	thirtyDaysAgo := now.AddDate(0, 0, -30)
 
-	client := &http.Client{}
-
-	req, err := http.NewRequest(
-		"PUT",
-		fmt.Sprintf(
-			"https://api.starlingbank.com/api/v2/feed/account/%s/category/%s/%s/spending-category", accountUid, categoryUid, categoryUpdate.FeedItemUid),
-		bytes.NewBuffer(postBody))
-	if err != nil {
-		return types.CategoryUpdatePostBody{}, &types.RequestError{StatusCode: http.StatusInternalServerError, Message: err.Error()}
-	}
-	req.Header.Add("Content-Type", "application/json;charset=UTF-8")
-
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-
-	res, clientErr := client.Do(req)
-
-	if clientErr != nil {
-		fmt.Println("ERROR: ", clientErr)
-		return types.CategoryUpdatePostBody{}, &types.RequestError{StatusCode: res.StatusCode, Message: clientErr.Error()}
-	} else if res.StatusCode != 200 {
-		return types.CategoryUpdatePostBody{}, &types.RequestError{StatusCode: res.StatusCode, Message: "Failed to update category"}
-	} else {
-		defer res.Body.Close()
-
-		return categoryUpdate, nil
-	}
+	return dao.FetchTransactionsBetween(db, thirtyDaysAgo.Format(time.RFC3339), now.Format(time.RFC3339))
 }
 
-func GetTransactionsForTimePeriod(accountUid string, categoryUid string, firstDate string, secondDate string) (types.Transactions, error) {
-	if utils.IsDemo() {
-		return types.TransactionsTestData, nil
-	}
-
-	accessToken, accessTokenErr := utils.SourceAccessToken()
-	if(accessTokenErr != nil) {
-		return types.Transactions{}, accessTokenErr
-	}
-
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://api.starlingbank.com/api/v2/feed/account/%s/category/%s/transactions-between", accountUid, categoryUid), nil)
+func ClassifyTransaction(transaction entities.Transaction) ([]byte, error) {
+	transactionFromReq, err := json.Marshal(transaction)
 	if err != nil {
-		return types.Transactions{}, &types.RequestError{StatusCode: http.StatusInternalServerError, Message: err.Error()}
+		return nil, err
+	}
+	pythonCommand := exec.Command("python3", "./data/knn.py", string(transactionFromReq))
+	return pythonCommand.CombinedOutput()
+	
+}
+
+func UpdateTransactionCategory(feedItemUid string, category string) error {
+	accountUid, categoryUid := starlingapi.GetStarlingAccountAndCategoryUid().AccountUid, starlingapi.GetStarlingAccountAndCategoryUid().CategoryUid
+
+	return starlingapi.UpdateCategoryForTransactions(feedItemUid, category, accountUid, categoryUid)
+}
+
+func RunningKnnOnTransactions(db *sqlx.DB) (error) {
+
+	transactions, getTransactionsErr  := dao.FetchAllTransactions(db)
+	if(getTransactionsErr != nil) {
+		return fmt.Errorf("failed to fetch all transactions with error: %v", getTransactionsErr)
 	}
 
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-
-	q := req.URL.Query()
-	q.Add("minTransactionTimestamp", firstDate)
-
-	q.Add("maxTransactionTimestamp", secondDate)
-	req.URL.RawQuery = q.Encode()
-
-	res, clientErr := client.Do(req)
-	fmt.Print(req.URL)
-	fmt.Print("response",res)
-	if clientErr != nil {
-		return types.Transactions{}, &types.RequestError{StatusCode: res.StatusCode, Message: clientErr.Error()}
-	}  else if res.StatusCode != 200 {
-		return types.Transactions{}, &types.RequestError{StatusCode: res.StatusCode, Message: "failed to get transactions"}
-	} else {
-		defer res.Body.Close()
-
-		body, err := io.ReadAll(res.Body)
-
-		if err != nil {
-			return types.Transactions{}, &types.RequestError{StatusCode: res.StatusCode, Message: err.Error()}
-		}
-		var res types.Transactions
-		json.Unmarshal(body, &res)
-
-		return res, nil
+	transactionsResp, marshallErr := json.Marshal(transactions)
+	if(marshallErr != nil) {
+		return fmt.Errorf("failed to marshal transactions with error: %v", marshallErr)
 	}
 
+	err := os.WriteFile("/tmp/transactions.json", transactionsResp, 0644)
+	utils.Check(err)
+	return nil
 }

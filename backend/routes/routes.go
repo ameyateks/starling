@@ -15,8 +15,6 @@ func enableCors(w *http.ResponseWriter) {
 
 func CreateRouter(db *sqlx.DB) *mux.Router{
 	mux := mux.NewRouter()
-	// mux.HandleFunc("/api/user", starlingUser).Methods("GET")
-
 	getStarlingTransaction := wrapStarlingTransactionsHandler(db)
 	
 	mux.HandleFunc("/api/accounts", starlingAccount).Methods(http.MethodGet)
@@ -25,3 +23,4 @@ func CreateRouter(db *sqlx.DB) *mux.Router{
 	mux.HandleFunc("/api/category", updateCategoryForTransactionsHandler).Methods(http.MethodPost, http.MethodOptions)
 	return mux
 }
+

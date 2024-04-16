@@ -1,6 +1,7 @@
 package entities
 
-import "starling/types"
+import "starling/starlingapi"
+
 
 type Transaction struct {
 	FeedItemUid               string `db:"feed_item_uid" json:"feedItemUid"`
@@ -15,7 +16,7 @@ type Transaction struct {
 	UserNote                  string `db:"user_note" json:"userNote"`
 }
 
-func TransactionDomainToDao(transaction types.Transaction) Transaction {
+func StarlingTransactionToDao(transaction starlingapi.Transaction) Transaction {
 	return Transaction{
 		FeedItemUid:               transaction.FeedItemUid,
 		CategoryUid:               transaction.CategoryUid,

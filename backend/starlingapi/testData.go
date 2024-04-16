@@ -1,4 +1,4 @@
-package types
+package starlingapi
 
 import (
 	"math/rand"

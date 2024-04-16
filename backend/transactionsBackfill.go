@@ -5,12 +5,14 @@ import (
 	"log"
 	"starling/dao"
 	"starling/dao/entities"
-	"starling/services"
+	"starling/starlingapi"
 	"starling/utils"
 	"time"
 
 	"github.com/joho/godotenv"
 )
+
+// this function is a one time script to backfill transactions in the database, keeping here for clarity
 
 func runTransactionsBackfill() {
 	if err := godotenv.Load(); err != nil {
@@ -19,9 +21,9 @@ func runTransactionsBackfill() {
 
 	now := time.Now()
 
-	accountUid, categoryUid, createdAt := services.GetStarlingAccountAndCategoryUid().AccountUid, services.GetStarlingAccountAndCategoryUid().CategoryUid, services.GetStarlingAccountAndCategoryUid().CreatedAt
+	accountUid, categoryUid, createdAt := starlingapi.GetStarlingAccountAndCategoryUid().AccountUid, starlingapi.GetStarlingAccountAndCategoryUid().CategoryUid, starlingapi.GetStarlingAccountAndCategoryUid().CreatedAt
 
-	transactions, getTransactionsErr := services.GetTransactionsForTimePeriod(accountUid, categoryUid, createdAt, now.Format(time.RFC3339))
+	transactions, getTransactionsErr := starlingapi.GetTransactionsForTimePeriod(accountUid, categoryUid, createdAt, now.Format(time.RFC3339))
 	if getTransactionsErr != nil {
 		log.Fatalf("Error getting transactions: %v", getTransactionsErr)
 	}
@@ -31,7 +33,7 @@ func runTransactionsBackfill() {
 	var transactionsDao []entities.Transaction
 
 	for _, transaction := range transactionsArr {
-		transactionDao := entities.TransactionDomainToDao(transaction)
+		transactionDao := entities.StarlingTransactionToDao(transaction)
 		transactionsDao = append(transactionsDao, transactionDao)
 	}
 

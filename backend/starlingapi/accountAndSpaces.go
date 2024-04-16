@@ -1,8 +1,7 @@
-package services
+package starlingapi
 
 import (
 	"encoding/json"
-	"starling/types"
 	"starling/utils"
 
 	"fmt"
@@ -14,20 +13,20 @@ import (
 
 const StarlingAPIBaseUrl = "https://api.starlingbank.com/api/v2/"
 
-func GetSpaces(accountId string) (types.StarlingSpaces, error) {
+func GetSpaces(accountId string) (StarlingSpaces, error) {
 	if utils.IsDemo() {
-		return types.StarlingSpacesTestData, nil
+		return StarlingSpacesTestData, nil
 	}
 
 	accessToken, accessTokenErr := utils.SourceAccessToken()
 	if(accessTokenErr != nil) {
-		return types.StarlingSpaces{}, accessTokenErr
+		return StarlingSpaces{}, accessTokenErr
 	}
 
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", StarlingAPIBaseUrl+"account/"+accountId+"/spaces", nil)
 	if err != nil {
-		return types.StarlingSpaces{}, &types.RequestError{StatusCode: http.StatusInternalServerError, Message: err.Error()}
+		return StarlingSpaces{}, &RequestError{StatusCode: http.StatusInternalServerError, Message: err.Error()}
 	}
 
 	req.Header.Set("Authorization", "Bearer "+accessToken)
@@ -36,15 +35,15 @@ func GetSpaces(accountId string) (types.StarlingSpaces, error) {
 
 	if clientErr != nil {
 		fmt.Println("ERROR: ", err)
-		return types.StarlingSpaces{}, &types.RequestError{StatusCode: res.StatusCode, Message: clientErr.Error()}
+		return StarlingSpaces{}, &RequestError{StatusCode: res.StatusCode, Message: clientErr.Error()}
 	} else {
 		defer res.Body.Close()
 
 		body, err := io.ReadAll(res.Body)
 		if err != nil {
-			return types.StarlingSpaces{}, &types.RequestError{StatusCode: res.StatusCode, Message: err.Error()}
+			return StarlingSpaces{}, &RequestError{StatusCode: res.StatusCode, Message: err.Error()}
 			}
-		var res types.StarlingSpaces
+		var res StarlingSpaces
 		json.Unmarshal(body, &res)
 
 		return res, nil
@@ -52,29 +51,29 @@ func GetSpaces(accountId string) (types.StarlingSpaces, error) {
 
 }
 
-func GetAccountBalance(accountId string) (types.StarlingBalance, error) {
+func GetAccountBalance(accountId string) (StarlingBalance, error) {
 	if utils.IsDemo() {
-		return types.StarlingBalanceTestData, nil
+		return StarlingBalanceTestData, nil
 	}
 
 	accessToken, accessTokenErr := utils.SourceAccessToken()
 	if(accessTokenErr != nil) {
-		return types.StarlingBalance{}, accessTokenErr
+		return StarlingBalance{}, accessTokenErr
 	}
 
 	client := &http.Client{}
 	req, newHttpErr := http.NewRequest("GET", StarlingAPIBaseUrl+"accounts/"+accountId+"/balance", nil)
 	if newHttpErr != nil {
-		return types.StarlingBalance{}, newHttpErr
+		return StarlingBalance{}, newHttpErr
 	}
 
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 
 	res, clientErr := client.Do(req)
 	if clientErr != nil {
-		return types.StarlingBalance{}, &types.RequestError{StatusCode: res.StatusCode, Message: clientErr.Error()}
+		return StarlingBalance{}, &RequestError{StatusCode: res.StatusCode, Message: clientErr.Error()}
 	} else if res.StatusCode != 200 {
-		return types.StarlingBalance{}, &types.RequestError{StatusCode: res.StatusCode, Message: "failed to get Starling Balance"}
+		return StarlingBalance{}, &RequestError{StatusCode: res.StatusCode, Message: "failed to get Starling Balance"}
 	} else {
 		defer res.Body.Close()
 
@@ -82,7 +81,7 @@ func GetAccountBalance(accountId string) (types.StarlingBalance, error) {
 		if err != nil {
 			fmt.Println(err)
 		}
-		var res types.StarlingBalance
+		var res StarlingBalance
 		json.Unmarshal(body, &res)
 		fmt.Printf("%+v\n", res)
 
@@ -91,9 +90,9 @@ func GetAccountBalance(accountId string) (types.StarlingBalance, error) {
 
 }
 
-func GetStarlingAccountAndCategoryUid() types.AccountAndCategoryUid {
+func GetStarlingAccountAndCategoryUid() AccountAndCategoryUid {
 	if utils.IsDemo() {
-		return types.AccountAndCatUidTestData
+		return AccountAndCatUidTestData
 	}
 
 	accessToken, exists := os.LookupEnv("ACCESS_TOKEN")
@@ -114,7 +113,7 @@ func GetStarlingAccountAndCategoryUid() types.AccountAndCategoryUid {
 
 	if err != nil {
 		fmt.Println("ERROR: ", err)
-		return types.AccountAndCategoryUid{}
+		return AccountAndCategoryUid{}
 	} else {
 		defer res.Body.Close()
 
@@ -122,10 +121,10 @@ func GetStarlingAccountAndCategoryUid() types.AccountAndCategoryUid {
 		if err != nil {
 			fmt.Println(err)
 		}
-		var res types.StarlingAccountInfo
+		var res StarlingAccountInfo
 		json.Unmarshal(body, &res)
 
-		return types.AccountAndCategoryUid{AccountUid: res.Accounts[0].AccountUid, CategoryUid: res.Accounts[0].DefaultCategory, CreatedAt: res.Accounts[0].CreatedAt}
+		return AccountAndCategoryUid{AccountUid: res.Accounts[0].AccountUid, CategoryUid: res.Accounts[0].DefaultCategory, CreatedAt: res.Accounts[0].CreatedAt}
 
 	}
 

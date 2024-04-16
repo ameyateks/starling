@@ -15,6 +15,19 @@ import (
 )
 
 func GetTransactions(db *sqlx.DB) ([]entities.Transaction, error) {
+	if utils.IsDemo() {
+
+		var transactions []entities.Transaction
+
+		for _, starlingTransaction := range starlingapi.TransacationsTestDataArr {
+			transaction := entities.StarlingTransactionToDao(starlingTransaction)
+			transactions = append(transactions, transaction)
+
+		}
+
+		return transactions, nil
+
+	}
 	now := time.Now()
 
 	thirtyDaysAgo := now.AddDate(0, 0, -30)
@@ -29,7 +42,7 @@ func ClassifyTransaction(transaction entities.Transaction) ([]byte, error) {
 	}
 	pythonCommand := exec.Command("python3", "./data/knn.py", string(transactionFromReq))
 	return pythonCommand.CombinedOutput()
-	
+
 }
 
 func UpdateTransactionCategory(feedItemUid string, category string) error {
@@ -38,15 +51,15 @@ func UpdateTransactionCategory(feedItemUid string, category string) error {
 	return starlingapi.UpdateCategoryForTransactions(feedItemUid, category, accountUid, categoryUid)
 }
 
-func RunningKnnOnTransactions(db *sqlx.DB) (error) {
+func RunningKnnOnTransactions(db *sqlx.DB) error {
 
-	transactions, getTransactionsErr  := dao.FetchAllTransactions(db)
-	if(getTransactionsErr != nil) {
+	transactions, getTransactionsErr := dao.FetchAllTransactions(db)
+	if getTransactionsErr != nil {
 		return fmt.Errorf("failed to fetch all transactions with error: %v", getTransactionsErr)
 	}
 
 	transactionsResp, marshallErr := json.Marshal(transactions)
-	if(marshallErr != nil) {
+	if marshallErr != nil {
 		return fmt.Errorf("failed to marshal transactions with error: %v", marshallErr)
 	}
 

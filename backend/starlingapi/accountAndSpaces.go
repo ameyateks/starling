@@ -99,6 +99,7 @@ func GetStarlingAccountAndCategoryUid() AccountAndCategoryUid {
 
 	if !exists {
 		fmt.Println("ERROR: ACCESS_TOKEN not set")
+		return AccountAndCategoryUid{}
 	}
 
 	client := &http.Client{}

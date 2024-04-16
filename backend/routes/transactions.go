@@ -66,7 +66,7 @@ func classifyTransaction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pythonCommand := exec.Command("python3", "../data/knn.py", string(transactionFromReq))
+	pythonCommand := exec.Command("python3", "./data/knn.py", string(transactionFromReq))
 	classificationResp, pythonErr := pythonCommand.CombinedOutput()
 	if pythonErr != nil {
 		w.WriteHeader(http.StatusInternalServerError)

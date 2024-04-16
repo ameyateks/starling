@@ -41,7 +41,12 @@ export function Transactions() {
   );
   useEffect(() => {
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/transactions`)
-      .then((response) => response.json())
+      .then((response) =>
+        pipe(response.json(), (a) => {
+          console.log(a);
+          return a;
+        })
+      )
       .then((data) => {
         setTransactions(O.some(data));
       })

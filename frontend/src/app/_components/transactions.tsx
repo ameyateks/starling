@@ -40,7 +40,7 @@ export function Transactions() {
     O.none
   );
   useEffect(() => {
-    fetch("http://localhost:8080/api/transactions")
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/transactions`)
       .then((response) => response.json())
       .then((data) => {
         setTransactions(O.some(data));

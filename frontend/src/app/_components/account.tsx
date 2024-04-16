@@ -50,7 +50,7 @@ export function Account() {
   const [posts, setPosts] = useState<O.Option<BalanceAndSpaces>>(O.none);
 
   useEffect(() => {
-    fetch("http://localhost:8080/api/accounts")
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/accounts`)
       .then((response) => response.json())
       .then((data) => {
         setPosts(O.some(data));

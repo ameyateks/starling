@@ -53,7 +53,21 @@ func UpdateTransactionCategory(feedItemUid string, category string) error {
 
 func RunningKnnOnTransactions(db *sqlx.DB) error {
 
-	transactions, getTransactionsErr := dao.FetchAllTransactions(db)
+	var transactions []entities.Transaction
+	var getTransactionsErr error
+
+	if utils.IsDemo() {
+		for _, starlingTransaction := range starlingapi.TransacationsTestDataArr {
+			transaction := entities.StarlingTransactionToDao(starlingTransaction)
+			transactions = append(transactions, transaction)
+		}
+	} else {
+		transactions, getTransactionsErr = dao.FetchAllTransactions(db)
+		if getTransactionsErr != nil {
+			return fmt.Errorf("failed to fetch all transactions with error: %v", getTransactionsErr)
+		}
+	}
+	
 	if getTransactionsErr != nil {
 		return fmt.Errorf("failed to fetch all transactions with error: %v", getTransactionsErr)
 	}

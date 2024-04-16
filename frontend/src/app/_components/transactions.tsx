@@ -94,13 +94,16 @@ function List(props: { transactions: Transaction[] }): JSX.Element {
   const handleClassifiedTransactionClick = async (transaction: Transaction) => {
     setIsLoading(true);
     try {
-      const response = await fetch("http://localhost:8080/api/knn", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(transaction),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/knn`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(transaction),
+        }
+      );
 
       const responseData = await response.json();
       pipe(
@@ -325,16 +328,19 @@ function updateSpendingCategoryOnTransaction({
   ) => {
     setUpdateLoading(true);
     try {
-      const response = await fetch("http://localhost:8080/api/category", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          feedItemUid: transaction.feedItemUid,
-          category: newCategory,
-        }),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/category`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            feedItemUid: transaction.feedItemUid,
+            category: newCategory,
+          }),
+        }
+      );
 
       const responseData = await response.json();
       pipe(

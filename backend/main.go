@@ -1,49 +1,28 @@
 package main
 
 import (
-	"database/sql"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"starling/routes"
 	"starling/services"
 
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/postgres"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
+	"github.com/joho/godotenv"
 )
 
-func main() {
-	dbenv := os.Getenv("DATABASE_URL")
-	fmt.Println(dbenv)
-
-	dba, err := sql.Open("postgres", dbenv)
-	driver, err := postgres.WithInstance(dba, &postgres.Config{})
-    m, err := migrate.NewWithDatabaseInstance(
-        "file:///migrations",
-        "postgres", driver)
-
-	if err != nil {
-		fmt.Print("failed to run migrations")
-		return
+func init() {
+	if err := godotenv.Load(); err != nil {
+		log.Fatalf("Error loading .env file: %v", err)
 	}
-	m.Up()
-	
-
+}
+func main() {
 	dbHost := os.Getenv("PG_HOST")
 	dbUser := os.Getenv("PG_USER")
 	dbPass := os.Getenv("PG_PASSWORD")
 	dbName := os.Getenv("PG_NAME")
 	dbPort := os.Getenv("PG_PORT")
-
-
-	
 	db, err := sqlx.Connect("postgres", "user="+dbUser+" dbname="+dbName+" sslmode=disable"+" password="+dbPass+" host="+dbHost+" port="+dbPort)
-
-    m.Up()
 	if err != nil {
 		log.Fatalln(err)
 	}

@@ -7,8 +7,6 @@ import {
   Title,
   LinearScale,
 } from "chart.js";
-import * as ord from "fp-ts/lib/Ord";
-import Ord = ord.Ord;
 import { Transactions } from "./_components/transactions";
 import { Account } from "./_components/account";
 
